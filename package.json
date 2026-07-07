@@ -1,0 +1,14 @@
+{
+  "name": "opds-vercel-server",
+  "version": "1.0.0",
+  "description": "OPDS 1.x Content Server chạy trên Vercel Serverless Functions, dùng metadata_public.json trên Google Drive làm nguồn dữ liệu duy nhất. Tương thích Moon+ Reader.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {}
+}
