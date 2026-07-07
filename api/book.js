@@ -12,14 +12,21 @@
 
 import { getLibrary } from "../lib/cache.js";
 import { buildSingleBookEntryDocument, buildErrorFeed, getBaseUrl } from "../lib/opds-builder.js";
-import { fetchDriveFile, FORMAT_MIME_TYPES } from "../lib/gdrive.js";
+import { streamDriveFile, FORMAT_MIME_TYPES } from "../lib/gdrive.js";
 import { OPDS_ENTRY_CONTENT_TYPE } from "../config.js";
+import { pipeline } from "node:stream/promises";
 
 function safeFileName(title, format) {
   const base = String(title || "book")
     .replace(/[\\/:*?"<>|]/g, "_")
     .slice(0, 120);
   return `${base}.${String(format).toLowerCase()}`;
+}
+
+/** Đẩy stream ra response, set status 200 trước khi ghi byte đầu tiên. */
+async function pipeToResponse(stream, res) {
+  res.status(200);
+  await pipeline(stream, res);
 }
 
 export default async function handler(req, res) {
@@ -54,13 +61,15 @@ export default async function handler(req, res) {
       return;
     }
     try {
-      const file = await fetchDriveFile(book.coverId);
+      const file = await streamDriveFile(book.coverId);
       res.setHeader("Content-Type", file.contentType.startsWith("image/") ? file.contentType : "image/jpeg");
       res.setHeader("Cache-Control", "public, max-age=3600");
-      res.status(200).send(file.buffer);
+      if (file.contentLength) res.setHeader("Content-Length", file.contentLength);
+      await pipeToResponse(file.stream, res);
     } catch (err) {
       console.log("[opds] lỗi tải cover:", err.message);
-      res.status(502).send("Không thể tải ảnh bìa từ Google Drive.");
+      if (!res.headersSent) res.status(502).send("Không thể tải ảnh bìa từ Google Drive.");
+      else res.destroy();
     }
     console.log("[opds] request time /api/book (cover)", `${Date.now() - start}ms`);
     return;
@@ -74,7 +83,7 @@ export default async function handler(req, res) {
       return;
     }
     try {
-      const file = await fetchDriveFile(fmt.driveId);
+      const file = await streamDriveFile(fmt.driveId);
       const mime = FORMAT_MIME_TYPES[fmt.format] || file.contentType || "application/octet-stream";
       res.setHeader("Content-Type", mime);
       res.setHeader(
@@ -82,10 +91,15 @@ export default async function handler(req, res) {
         `attachment; filename="${safeFileName(book.title, fmt.format)}"`
       );
       res.setHeader("Cache-Control", "public, max-age=3600");
-      res.status(200).send(file.buffer);
+      if (file.contentLength) res.setHeader("Content-Length", file.contentLength);
+      await pipeToResponse(file.stream, res);
     } catch (err) {
       console.log("[opds] lỗi tải file sách:", err.message);
-      res.status(502).send("Không thể tải file sách từ Google Drive. File có thể quá lớn hoặc không public.");
+      if (!res.headersSent) {
+        res.status(502).send("Không thể tải file sách từ Google Drive. File có thể quá lớn hoặc không public.");
+      } else {
+        res.destroy();
+      }
     }
     console.log("[opds] request time /api/book (download)", `${Date.now() - start}ms`);
     return;

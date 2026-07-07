@@ -9,6 +9,9 @@
     }
   ],
   "functions": {
+    "api/book.js": {
+      "maxDuration": 60
+    },
     "api/**/*.js": {
       "maxDuration": 15
     }
