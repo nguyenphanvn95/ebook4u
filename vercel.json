@@ -1,11 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    { "source": "/opensearch.xml", "destination": "/public/opensearch.xml" }
-  ],
   "headers": [
     {
-      "source": "/public/opensearch.xml",
+      "source": "/opensearch.xml",
       "headers": [
         { "key": "Content-Type", "value": "application/opensearchdescription+xml;charset=utf-8" }
       ]
