@@ -11,7 +11,7 @@
  */
 export const METADATA_URL =
   process.env.METADATA_URL ||
-  "https://raw.githubusercontent.com/example/replace-me/main/metadata_public.json";
+  "https://drive.usercontent.google.com/u/0/uc?id=1cnlQaEaUUKpWWuREqybUWGtbWq80CL7I&export=download";
 
 /**
  * URL Web App của Google Apps Script dùng để đọc file trên Google Drive
